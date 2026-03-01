@@ -37,7 +37,7 @@
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      background: #0b1220;
+      background: #5a6781;
       color: #eef2ff;
     }
 
@@ -48,7 +48,7 @@
     }
 
     .card {
-      background: #121b2e;
+      background: #2a4580;
       border: 1px solid rgba(255, 255, 255, 0.10);
       border-radius: 14px;
       padding: 16px;
@@ -165,8 +165,9 @@
        HEADER / BRAND AREA (Task F)
        ============================ -->
     <div class="topbar">
-      <h1>Trivia Challenge</h1>
-      <span class="pill">Ch 9–10: DOM + Events + Async APIs + localStorage</span>
+      <h1>Trivia World</h1>
+      <img src="https://cdn-icons-png.flaticon.com/512/2913/2913465.png" alt="Trivia Icon" width="40" height="40" />
+      <span class="pill">Fun Free Trivia</span>
     </div>
 
     <!-- ============================
@@ -484,7 +485,7 @@
       // TODO #5 (Ch 10): Fetch questions for the round
       // ======================================================
       async function fetchQuestions(cfg) {
-        let url = API.questionsUrl(cfg.amount, cfg.difficulty, state.pleyer.category, state.token);
+        let url = API.questionsUrl(cfg.amount, cfg.difficulty, state.player.category, state.token);
         var res = await fetch(url);
         if (!res.ok) throw new Error(`HTTP Error. Status: ${res.status}`);
 
@@ -563,7 +564,8 @@
         // --------------------------------------------
         // TODO (students): Save the user's choice on the question object.
         // Example:
-        // q.userChoice = choiceText;
+        q.userChoice = choiceText;
+
 
         if (choiceText === q.correct) {
           state.score = state.score + 1;
@@ -601,6 +603,8 @@
         for (i = 0; i < state.questions.length; i++) {
           var qq = state.questions[i];
           lines.push((i + 1) + ") " + qq.question);
+          lines.push("   Your answer: " + qq.userChoice + (qq.userChoice === qq.correct ? " ✓" : " ✗"));
+          lines.push("   Correct answer: " + qq.correct);
 
           // TODO: Add these lines and any ✓/✗ marking you want.
           // HINT:
@@ -641,8 +645,7 @@
         // --------------------------------------------------
         // TODO : Set (ROUND.difficulty) based on the dropdown selection (state - player - mode).
         // The dropdown provides: "easy", "medium", or "hard"
-
-
+        ROUND.difficulty = state.player.mode;
         beginRound();
         showOnly(screenQuiz);
 
@@ -652,8 +655,10 @@
           if (!state.token) {
             state.token = await getToken();
           }
+          console.log("Token:", state.token);
 
           var raw = await fetchQuestions(ROUND);
+          console.log("Raw API questions:", raw);
 
           // Normalize API data into internal format
           state.questions = [];
