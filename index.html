@@ -297,6 +297,27 @@
       - Use textContent when showing user data.
     */
 
+    /*
+    Short answer questions:
+    Why do we need async/await when using fetch()?
+    - fetch() is performing a network request which can take a very long time, especially compared to the speed of code execution.
+      Using async/await allows the code to continue executing while this request is being processed, and the response is handled once it's ready.
+
+    What does OpenTDB response_code mean in your implementation? Explain 0 and 5.
+    - response_code is a number provided by the OpenTDB API to indicate the status of the request.
+      0 means that the request was successful and questions were returned
+      5 means that the rate limit has been reached, and you must wait before making more requests
+
+    What exactly is stored under STORAGE_KEY and why is JSON used?
+    - STORAGE_KEY is a string key used to store and retrieve the user's best score and attempt count in the browser's localStorage. 
+      JSON is used to convert the JavaScript object containing the data into a string format that can be stored in localStorage, and to parse it back into an object when retrieving it.
+
+    Describe what happens from clicking Start Quiz until the first question is displayed (mention the functions involved).
+    - On clicking the button, runRoundFlow() is called. In this function, validateStartForm() is called and if the form is valid, the data is stored in the state object
+      using startFromForm(). Then, difficulty is set, and some state and HTML elements are reset using beginRound(). Then API calls are made to get a token and the questions,
+      and the questions are formatted using decodeHTMLEntities and shuffle. Finally, the first question is rendered using renderQuestion().
+    */
+
     (function () {
       "use strict";
 
@@ -450,9 +471,14 @@
       // ======================================================
       function loadProgress() {
         try {
-          stats = JSON.parse(localStorage.getItem(STORAGE_KEY));
-          return { bestScore: stats.bestScore, bestTotal: stats.bestTotal, attempts: stats.attempts}
-        } catch {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            return { bestScore: 0, bestTotal: 0, attempts: 0 };
+          }
+          const stats = JSON.parse(raw);
+          return (stats && typeof stats === "object") ? stats : { bestScore: 0, bestTotal: 0, attempts: 0 };
+        } catch (err) {
+          console.log("No valid progress found in localStorage.", err);
           return { bestScore: 0, bestTotal: 0, attempts: 0 };
         }
       }
@@ -474,7 +500,7 @@
       async function getToken() {
         var res = await fetch(API.token);
         if (!res.ok) throw new Error(`HTTP Error. Status: ${res.status}`);
-        
+
         var data = await res.json();
         if (!data.token) throw new Error("Unable to fetch token from OpenTDB.");
 
@@ -655,10 +681,8 @@
           if (!state.token) {
             state.token = await getToken();
           }
-          console.log("Token:", state.token);
 
           var raw = await fetchQuestions(ROUND);
-          console.log("Raw API questions:", raw);
 
           // Normalize API data into internal format
           state.questions = [];
